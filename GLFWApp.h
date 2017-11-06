@@ -82,9 +82,9 @@ class GLFWApp{
 
   typedef enum{
     MOUSE_BUTTON_NONE = 0,
-    MOUSE_BUTTON_LEFT = GLFW_MOUSE_BUTTON_LEFT,
-    MOUSE_BUTTON_RIGHT = GLFW_MOUSE_BUTTON_RIGHT,
-    MOUSE_BUTTON_MIDDLE = GLFW_MOUSE_BUTTON_MIDDLE
+    MOUSE_BUTTON_LEFT = 1,
+    MOUSE_BUTTON_RIGHT = 2,
+    MOUSE_BUTTON_MIDDLE = 3
   }mouseButton_t;
 
   typedef enum{
@@ -290,7 +290,6 @@ class GLFWApp{
     switch(action){
     case GLFW_PRESS:
       {
-        app->_mousePreviousPosition = app->_mouseCurrentPosition;
         switch(button)
           {
           case GLFW_MOUSE_BUTTON_LEFT:
@@ -334,6 +333,7 @@ class GLFWApp{
       }
       break;
       }
+    //std::cerr << app->_mouseButtonFlags << std::endl;
   }
   
   static void _keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods){
@@ -351,6 +351,7 @@ class GLFWApp{
   static void _cursorPositionCallback(GLFWwindow* window, double x, double y){
     GLFWApp *app = reinterpret_cast<GLFWApp*>(glfwGetWindowUserPointer(window));
     assert(app != nullptr);
+    app->_mousePreviousPosition = app->_mouseCurrentPosition;
     app->_mouseCurrentPosition = std::make_tuple(int(floor(x)), int(floor(y)));
   }
   

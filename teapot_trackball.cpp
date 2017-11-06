@@ -181,11 +181,6 @@ public:
 
     mainCamera.lookAtMatrix(lookAtMatrix);
 
-    /*currentCamera->debug( );
-    teapots[0]->debug( );
-    std::cerr << "Look At: " << glm::to_string(lookAtMatrix) << std::endl;
-    std::cerr << "Perspective: " << glm::to_string(projectionMatrix) << std::endl;*/
-
     // Set light & material properties for the teapot;
     // lights are transformed by current modelview matrix
     // such that they are positioned correctly in the scene.
@@ -203,14 +198,15 @@ public:
     int mbFlags = mouseButtonFlags( );
     std::tuple<int, int> mousePosition = mouseCurrentPosition( );
     std::tuple<int, int> prevMousePosition = mousePreviousPosition( );
-
-    std::cerr << "Current mouse position: " << std::get<0>(mousePosition) << ", " << std::get<1>(mousePosition) << std::endl;
-    std::cerr << "Previous mouse position: " << std::get<0>(mousePosition) << ", " << std::get<1>(mousePosition) << std::endl;
-    std::cerr << "Mouse Button Flags: " << mbFlags << std::endl;
-    if(mbFlags == GLFW_MOUSE_BUTTON_LEFT){
+     
+    if(mbFlags == MOUSE_BUTTON_LEFT){
       std::cerr << "Left mouse button is down" << std::endl;
-    }else if(mbFlags  == GLFWApp::MOUSE_BUTTON_RIGHT){
+      std::cerr << "Current mouse position: " << std::get<0>(mousePosition) << ", " << std::get<1>(mousePosition) << std::endl;
+      std::cerr << "Previous mouse position: " << std::get<0>(prevMousePosition) << ", " << std::get<1>(prevMousePosition) << std::endl;
+    }else if(mbFlags == MOUSE_BUTTON_RIGHT){
       std::cerr << "Right mouse button is down" << std::endl;
+      std::cerr << "Current mouse position: " << std::get<0>(mousePosition) << ", " << std::get<1>(mousePosition) << std::endl;
+      std::cerr << "Previous mouse position: " << std::get<0>(prevMousePosition) << ", " << std::get<1>(prevMousePosition) << std::endl;
     }
 
     if(isKeyPressed('Q')){
@@ -220,8 +216,6 @@ public:
     }else if(isKeyPressed(GLFW_KEY_MINUS)){
 
     }else if(isKeyPressed('R')){
-      /*initEyePosition( );
-      initUpVector( );*/
       initCamera( );
       initRotationDelta( );
       initLights( );  
