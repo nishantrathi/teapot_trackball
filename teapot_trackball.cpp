@@ -46,7 +46,6 @@ private:
   glm::mat4 normalMatrix;
   
   GLSLProgram shaderProgram;
-  //GLSLProgram no_lightShaderProgram;
 
   SpinningLight light0;
   SpinningLight light1; 
@@ -188,11 +187,9 @@ public:
     _light1 = lookAtMatrix * light1.position( );
     
     modelViewMatrix = glm::translate(lookAtMatrix, teapot.position);
-    //modelViewMatrix = lookAtMatrix;
     normalMatrix = glm::inverseTranspose(modelViewMatrix);
     shaderProgram.activate( );
     activateUniforms(_light0, _light1, teapot.material);
-    //no_lightShaderProgram.activate( );
     teapot.draw( );
     
     int mbFlags = mouseButtonFlags( );
