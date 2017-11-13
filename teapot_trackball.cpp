@@ -23,6 +23,7 @@
 #include "SpinningLight.h"
 #include "Camera.h"
 #include "UtahTeapot.h"
+#include "utilities.h"
 
 void msglVersion(void){
   fprintf(stderr, "OpenGL Version Information:\n");
@@ -84,7 +85,7 @@ public:
   }
 
   void initRotationDelta( ){
-    rotationDelta = 0.05;
+    rotationDelta = deg2rad(1.0);
   }
    
   void initLights( ){
@@ -183,8 +184,8 @@ public:
     // Set light & material properties for the teapot;
     // lights are transformed by current modelview matrix
     // such that they are positioned correctly in the scene.
-    _light0 = lookAtMatrix * light0.position( );
-    _light1 = lookAtMatrix * light1.position( );
+    _light0 = lookAtMatrix * light0.position4( );
+    _light1 = lookAtMatrix * light1.position4( );
     
     modelViewMatrix = glm::translate(lookAtMatrix, teapot.position);
     normalMatrix = glm::inverseTranspose(modelViewMatrix);

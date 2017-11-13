@@ -16,6 +16,8 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include "utilities.h"
+
 #ifndef _CAMERA_H_
 #define _CAMERA_H_
 
@@ -27,15 +29,17 @@ public:
   glm::vec3 eyePosition;
   glm::vec3 upVector;
   glm::vec3 lookAt;
+  // fovy in degrees!!
   float fovy;
   float near;
   float far;
 
 
-  Camera(glm::vec3 position, glm::vec3 up, glm::vec3 la, float fieldOfViewInY, float n, float f):_rotationDelta(0.05), eyePosition(position), upVector(up), lookAt(la), fovy(fieldOfViewInY), near(n), far(f){
+  Camera(glm::vec3 position, glm::vec3 up, glm::vec3 la, float fieldOfViewInY, float n, float f):eyePosition(position), upVector(up), lookAt(la), fovy(fieldOfViewInY), near(n), far(f){
+    _rotationDelta = deg2rad(1.0);
   }
 
-  Camera( ){ };
+  Camera( ){ }
   ~Camera( ){ }
 
   void draw( ){
@@ -80,44 +84,69 @@ public:
     glEnd( );
   }
 
-  float halfHeight( ){
-    float fovy_rads = fovy * (M_PI / 180.0);
-    float hh = tan(fovy_rads);
+  float halfHeightNear( ){
+    float fovy_rads = deg2rad(fovy);
+    float hh = tan(fovy_rads / 2.0) * near;
     return hh;
   }
 
-  float halfWidth(float windowAspectRatio){
-    return halfHeight( ) * windowAspectRatio;
+  float halfWidthNear(float windowAspectRatio){
+    return halfHeightNear( ) * windowAspectRatio;
+  }
+
+  float halfHeightFar( ){
+    float fovy_rads = fovy * (M_PI / 180.0);
+    float hh = tan(fovy_rads / 2.0) * far;
+    return hh;
+  }
+
+  float halfWidthFar(float windowAspectRatio){
+    return halfHeightFar( ) * windowAspectRatio;
+  }
+
+  void drawViewFrustumX(float windowAspectRatio){
+
   }
 
   void drawViewFrustum(float windowAspectRatio){
-    // This code is bugging; please fix it.
-    // n/f == near/far  u/l == upper/lower  r/l == right/left
-    // E + dminD + uU + rR
-    // E + dmax / dmin (dminD + uU + rR)
-    float dmax_dmin = far / near;
-    float h = halfHeight( );
-    float w = halfWidth(windowAspectRatio);
-    glm::vec3 nur = eyePosition + near * gaze( ) + h * upVector + w * right( );
-    glm::vec3 nul = eyePosition + near * gaze( ) + h * upVector + -w * right( );
-    glm::vec3 nll = eyePosition + near * gaze( ) + -h * upVector + -w * right( );
-    glm::vec3 nlr = eyePosition + near * gaze( ) + -h * upVector + w * right( );
-    glm::vec3 fur = dmax_dmin * nur;
-    glm::vec3 ful = dmax_dmin * nul;
-    glm::vec3 fll = dmax_dmin * nll;
-    glm::vec3 flr = dmax_dmin * nlr;
+    float hNear = halfHeightNear( );
+    float hFar = halfHeightFar( );
+    float wNear = halfWidthNear(windowAspectRatio);
+    float wFar = halfWidthFar(windowAspectRatio);
+
+    glm::vec3 c = glm::vec3(0, 0, 0);
+
+    glm::vec3 nearCenter = c + gaze( ) * near;
+    glm::vec3 farCenter = c + gaze( ) * far;
+    glm::vec3 right = this->right( );
+
+
+    glm::vec3 nur = nearCenter + (upVector * hNear) + (right * wNear);
+    glm::vec3 nul = nearCenter + (upVector * hNear) - (right * wNear);
+    glm::vec3 nll = nearCenter - (upVector * hNear) - (right * wNear);
+    glm::vec3 nlr = nearCenter + (upVector * hNear) + (right * wNear);
+
+
+    glm::vec3 fur = farCenter + (upVector * hFar) + (right * wFar);
+    glm::vec3 ful = farCenter + (upVector * hFar) - (right * wFar);
+    glm::vec3 fll = farCenter - (upVector * hFar) - (right * wFar);
+    glm::vec3 flr = farCenter - (upVector * hFar) + (right * wFar);
 
     /*
+    std::cerr << "eye position: " << glm::to_string(eyePosition) << std::endl;
+    std::cerr << "gaze: " << glm::to_string(gaze( )) << std::endl;
+    std::cerr << "fovy: " << glm::to_string(upVector) << std::endl;
     std::cerr << "fovy: " << fovy << std::endl;
     std::cerr << "near: " << near << std::endl;
     std::cerr << "far: " << far << std::endl;
-    std::cerr << "half height: " << h << std::endl;
-    std::cerr << "half width" << w << std::endl;
-    std::cerr << "dmax_dmin: " << dmax_dmin << std::endl;
     std::cerr << "nur: " << glm::to_string(nur) << std::endl;
     std::cerr << "nul: " << glm::to_string(nul) << std::endl;
     std::cerr << "nll: " << glm::to_string(nll) << std::endl;
     std::cerr << "nlr: " << glm::to_string(nlr) << std::endl;
+    std::cerr << "fur: " << glm::to_string(fur) << std::endl;
+    std::cerr << "ful: " << glm::to_string(ful) << std::endl;
+    std::cerr << "fll: " << glm::to_string(fll) << std::endl;
+    std::cerr << "flr: " << glm::to_string(flr) << std::endl;
     */
 
     glNormal3f(0.0, 1.0, 0.0);
@@ -153,8 +182,6 @@ public:
     glVertex3fv(glm::value_ptr(ful));    
     glVertex3fv(glm::value_ptr(fll));
     glEnd( );
-
-
   }
 
   glm::vec3 gaze( ){
@@ -243,7 +270,7 @@ public:
   }
 
   void perspectiveMatrix(glm::mat4& m, float windowAspectRatio){
-    m = glm::perspective(fovy, windowAspectRatio, near, far);
+    m = glm::perspective(deg2rad(fovy), windowAspectRatio, near, far);
   }
 
   void lookAtMatrix(glm::mat4& m){
