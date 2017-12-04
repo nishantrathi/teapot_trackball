@@ -166,7 +166,34 @@ public:
     glUniform4fv(uSpecular, 1, glm::value_ptr(m->specular));
     glUniform1f(uShininess, m->shininess);
   }
-  
+
+  glm::vec3 shoeMake(glm::vec4 winCor, float teapotSize)
+  {
+    float xx = winCor.x * winCor.x;
+    float yy = winCor.y * winCor.y;
+    float rr = (teapotSize/2)*(teapotSize/2);
+    if(xx+yy>rr)
+    {
+      return glm::vec3(winCor.x,winCor.y,sqrt(rr-(xx+yy)));
+    }
+    else
+    {
+      float val = (teapotSize/2)/(sqrt(xx+yy));
+      glm::vec3 p = glm::vec3(winCor.x, winCor.y, 0)*val;
+      return p;
+    }
+  }
+
+  glm::vec4 getMouseCordinates(float mousePosX,float mousePosY)
+  {
+    float windowSize_width = 600;
+    float windowSize_height = 600;
+    float winx = (((mousePosX*2)-windowSize_width)/windowSize_width)*(2.0 * mainCamera.halfWidthNear(1));
+    float winy = -(((mousePosY*2)-windowSize_height)/windowSize_height)*(2.0 * mainCamera.halfWidthNear(1));
+    return glm::vec4 (winx,winy,mainCamera.near, 0);
+  }
+    
+
   bool render( ){
     glm::vec4 _light0;
     glm::vec4 _light1;
@@ -196,19 +223,61 @@ public:
     int mbFlags = mouseButtonFlags( );
     std::tuple<int, int> mousePosition = mouseCurrentPosition( );
     std::tuple<int, int> prevMousePosition = mousePreviousPosition( );
+
+   
      
     if(mbFlags == MOUSE_BUTTON_LEFT){
-      std::cerr << "Left mouse button is down" << std::endl;
-      std::cerr << "Current mouse position: " << std::get<0>(mousePosition) << ", " << std::get<1>(mousePosition) << std::endl;
-      std::cerr << "Previous mouse position: " << std::get<0>(prevMousePosition) << ", " << std::get<1>(prevMousePosition) << std::endl;
+      //std::cerr << "Left mouse button is down" << std::endl;
+      //std::cerr << "Current mouse position: " << std::get<0>(mousePosition) << ", " << std::get<1>(mousePosition) << std::endl;
+      //std::cerr << "Previous mouse position: " << std::get<0>(prevMousePosition) << ", " << std::get<1>(prevMousePosition) << std::endl;
+      glm::vec4 startWinCoords = getMouseCordinates(std::get<0>(mousePosition),std::get<1>(mousePosition));
+      glm::vec4 endWinCoords = getMouseCordinates(std::get<0>(prevMousePosition),std::get<1>(prevMousePosition));
+    
+      glm::mat4 lookAt;
+      mainCamera.lookAtMatrix(lookAt);
+      glm::vec4 startMouseCP = lookAt*startWinCoords;
+      glm::vec4 endMouseCP = lookAt*endWinCoords;
+      
+      glm::vec3 start = normalize(shoeMake(startMouseCP,1.0));
+      //std::cout<<"start "<<glm::to_string(start)<<std::endl;
+      glm::vec3 end = normalize(shoeMake(endMouseCP,1.0));
+      //std::cout<<"end "<<glm::to_string(end)<<std::endl;
+
+      glm::vec3 axis = cross(start,end);
+      float magnitude = sqrt(axis.x*axis.x+ axis.y*axis.y + axis.z*axis.z);
+      std::cout<<glm::to_string(axis)<<std::endl;
+      float sDe = atan(magnitude/dot(start,end));
+      std::cout<<magnitude<< " "<<sDe <<std::endl;
+      
     }else if(mbFlags == MOUSE_BUTTON_RIGHT){
       std::cerr << "Right mouse button is down" << std::endl;
       std::cerr << "Current mouse position: " << std::get<0>(mousePosition) << ", " << std::get<1>(mousePosition) << std::endl;
       std::cerr << "Previous mouse position: " << std::get<0>(prevMousePosition) << ", " << std::get<1>(prevMousePosition) << std::endl;
+       glm::vec4 startWinCoords = getMouseCordinates(std::get<0>(mousePosition),std::get<1>(mousePosition));
+      glm::vec4 endWinCoords = getMouseCordinates(std::get<0>(prevMousePosition),std::get<1>(prevMousePosition));
+    
+      glm::mat4 lookAt;
+      mainCamera.lookAtMatrix(lookAt);
+      glm::vec4 startMouseCP = lookAt*startWinCoords;
+      glm::vec4 endMouseCP = lookAt*endWinCoords;
+      
+      glm::vec3 start = normalize(shoeMake(startMouseCP,1.0));
+      //std::cout<<"start "<<glm::to_string(start)<<std::endl;
+      glm::vec3 end = normalize(shoeMake(endMouseCP,1.0));
+      //std::cout<<"end "<<glm::to_string(end)<<std::endl;
+
+      glm::vec3 axis = cross(start,end);
+      std::cout<<glm::to_string(axis)<<std::endl;
+      float magnitude = sqrt(axis.x*axis.x+ axis.y*axis.y + axis.z*axis.z);
+      
+      float sDe = atan(magnitude/dot(start,end));
+      std::cout<<magnitude<< " "<<sDe <<std::endl;
+
+      
     }
 
     if(isKeyPressed('Q')){
-      end( );      
+      end( );
     }else if(isKeyPressed(GLFW_KEY_EQUAL)){
 
     }else if(isKeyPressed(GLFW_KEY_MINUS)){
@@ -261,7 +330,6 @@ public:
     }
     return !msglError( );
   }
-    
 };
 
 
