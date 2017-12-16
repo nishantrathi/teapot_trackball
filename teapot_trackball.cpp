@@ -25,6 +25,9 @@
 #include "UtahTeapot.h"
 #include "utilities.h"
 
+#include <glm/gtc/quaternion.hpp>
+#include <glm/gtx/quaternion.hpp>
+
 void msglVersion(void){
   fprintf(stderr, "OpenGL Version Information:\n");
   fprintf(stderr, "\tVendor: %s\n", glGetString(GL_VENDOR));
@@ -47,7 +50,8 @@ private:
   glm::mat4 normalMatrix;
   
   GLSLProgram shaderProgram;
-
+  glm::mat4 totalRotationMatrix = glm::mat4(1.0);
+  glm::quat combineQuat;
   SpinningLight light0;
   SpinningLight light1; 
 
@@ -167,30 +171,38 @@ public:
     glUniform1f(uShininess, m->shininess);
   }
 
+  //shoe make method
   glm::vec3 shoeMake(glm::vec4 winCor, float teapotSize)
   {
     float xx = winCor.x * winCor.x;
     float yy = winCor.y * winCor.y;
-    float rr = (teapotSize/2)*(teapotSize/2);
+    float rr = (teapotSize)*(teapotSize);
     if(xx+yy>rr)
     {
-      return glm::vec3(winCor.x,winCor.y,sqrt(rr-(xx+yy)));
-    }
-    else
-    {
-      float val = (teapotSize/2)/(sqrt(xx+yy));
+      float val = (teapotSize)/(sqrt(xx+yy));
       glm::vec3 p = glm::vec3(winCor.x, winCor.y, 0)*val;
       return p;
     }
+    else
+    {
+      
+      return glm::vec3(winCor.x,winCor.y,sqrt(rr-(xx+yy)));
+    }
   }
-
+  // convert mouse coordinates
   glm::vec4 getMouseCordinates(float mousePosX,float mousePosY)
   {
     float windowSize_width = 600;
     float windowSize_height = 600;
-    float winx = (((mousePosX*2)-windowSize_width)/windowSize_width)*(2.0 * mainCamera.halfWidthNear(1));
-    float winy = -(((mousePosY*2)-windowSize_height)/windowSize_height)*(2.0 * mainCamera.halfWidthNear(1));
-    return glm::vec4 (winx,winy,mainCamera.near, 0);
+    float halfwh = windowSize_width/2;
+    //std::cout<<mousePosX<<","<<mousePosY<<std::endl;
+    float x = (mousePosX - halfwh)/halfwh;
+    float y = -((mousePosY - halfwh)/halfwh);
+    //std::cout<<x<<","<<y<<std::endl;
+
+    //float winx = (((mousePosX*2)-windowSize_width)/windowSize_width)*(2.0 * mainCamera.halfWidthNear(1));
+    //float winy = -(((mousePosY*2)-windowSize_height)/windowSize_height)*(2.0 * mainCamera.halfWidthNear(1));
+    return glm::vec4 (x,y,mainCamera.near, 0);
   }
     
 
@@ -233,48 +245,46 @@ public:
       glm::vec4 startWinCoords = getMouseCordinates(std::get<0>(mousePosition),std::get<1>(mousePosition));
       glm::vec4 endWinCoords = getMouseCordinates(std::get<0>(prevMousePosition),std::get<1>(prevMousePosition));
     
-      glm::mat4 lookAt;
-      mainCamera.lookAtMatrix(lookAt);
-      glm::vec4 startMouseCP = lookAt*startWinCoords;
-      glm::vec4 endMouseCP = lookAt*endWinCoords;
+      //glm::mat4 lookAt;
+      //mainCamera.lookAtMatrix(lookAt);
+      glm::vec4 startMouseCP = lookAtMatrix*startWinCoords;
+      glm::vec4 endMouseCP = lookAtMatrix*endWinCoords;
       
-      glm::vec3 start = normalize(shoeMake(startMouseCP,1.0));
+      glm::vec3 start = shoeMake(startMouseCP,1.0);
       //std::cout<<"start "<<glm::to_string(start)<<std::endl;
-      glm::vec3 end = normalize(shoeMake(endMouseCP,1.0));
+      glm::vec3 end = shoeMake(endMouseCP,1.0);
       //std::cout<<"end "<<glm::to_string(end)<<std::endl;
+      glm::vec3 e1 = centerPosition - start;
+      glm::vec3 e2 = centerPosition - end;
 
-      glm::vec3 axis = cross(start,end);
-      float magnitude = sqrt(axis.x*axis.x+ axis.y*axis.y + axis.z*axis.z);
-      std::cout<<glm::to_string(axis)<<std::endl;
-      float sDe = atan(magnitude/dot(start,end));
-      std::cout<<magnitude<< " "<<sDe <<std::endl;
+      glm::vec3 axis = glm::normalize(cross(e1,e2));
+      //float magnitude = sqrt(axis.x*axis.x+ axis.y*axis.y + axis.z*axis.z);
+      //  std::cout<<glm::to_string(axis)<<std::endl;
+      float sDe = acos(dot(e1,e2));
+      
+      if(sDe == 0)
+      {
+      
+        axis= glm::vec3(0.0,0.0,0.0);
+      }
+      glm::quat myQuat = glm::quat(glm::angleAxis(sDe,axis));
+      glm::mat4 rotationMat = glm::toMat4(myQuat);
+      totalRotationMatrix = totalRotationMatrix*rotationMat;
+      
+
       
     }else if(mbFlags == MOUSE_BUTTON_RIGHT){
       std::cerr << "Right mouse button is down" << std::endl;
       std::cerr << "Current mouse position: " << std::get<0>(mousePosition) << ", " << std::get<1>(mousePosition) << std::endl;
       std::cerr << "Previous mouse position: " << std::get<0>(prevMousePosition) << ", " << std::get<1>(prevMousePosition) << std::endl;
-       glm::vec4 startWinCoords = getMouseCordinates(std::get<0>(mousePosition),std::get<1>(mousePosition));
+      glm::vec4 startWinCoords = getMouseCordinates(std::get<0>(mousePosition),std::get<1>(mousePosition));
       glm::vec4 endWinCoords = getMouseCordinates(std::get<0>(prevMousePosition),std::get<1>(prevMousePosition));
     
-      glm::mat4 lookAt;
-      mainCamera.lookAtMatrix(lookAt);
-      glm::vec4 startMouseCP = lookAt*startWinCoords;
-      glm::vec4 endMouseCP = lookAt*endWinCoords;
       
-      glm::vec3 start = normalize(shoeMake(startMouseCP,1.0));
-      //std::cout<<"start "<<glm::to_string(start)<<std::endl;
-      glm::vec3 end = normalize(shoeMake(endMouseCP,1.0));
-      //std::cout<<"end "<<glm::to_string(end)<<std::endl;
+    }    
+    
+    modelViewMatrix = lookAtMatrix*totalRotationMatrix;
 
-      glm::vec3 axis = cross(start,end);
-      std::cout<<glm::to_string(axis)<<std::endl;
-      float magnitude = sqrt(axis.x*axis.x+ axis.y*axis.y + axis.z*axis.z);
-      
-      float sDe = atan(magnitude/dot(start,end));
-      std::cout<<magnitude<< " "<<sDe <<std::endl;
-
-      
-    }
 
     if(isKeyPressed('Q')){
       end( );
