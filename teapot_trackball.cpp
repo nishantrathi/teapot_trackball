@@ -227,6 +227,7 @@ public:
     _light1 = lookAtMatrix * light1.position4( );
     
     modelViewMatrix = glm::translate(lookAtMatrix, teapot.position);
+    modelViewMatrix = modelViewMatrix*totalRotationMatrix;
     normalMatrix = glm::inverseTranspose(modelViewMatrix);
     shaderProgram.activate( );
     activateUniforms(_light0, _light1, teapot.material);
@@ -279,11 +280,34 @@ public:
       std::cerr << "Previous mouse position: " << std::get<0>(prevMousePosition) << ", " << std::get<1>(prevMousePosition) << std::endl;
       glm::vec4 startWinCoords = getMouseCordinates(std::get<0>(mousePosition),std::get<1>(mousePosition));
       glm::vec4 endWinCoords = getMouseCordinates(std::get<0>(prevMousePosition),std::get<1>(prevMousePosition));
-    
+      
+      glm::vec4 startMouseCP = lookAtMatrix*startWinCoords;
+      glm::vec4 endMouseCP = lookAtMatrix*endWinCoords;
+      
+      glm::vec3 start = shoeMake(startMouseCP,1.0);
+      //std::cout<<"start "<<glm::to_string(start)<<std::endl;
+      glm::vec3 end = shoeMake(endMouseCP,1.0);
+      //std::cout<<"end "<<glm::to_string(end)<<std::endl;
+      glm::vec3 e1 = centerPosition - start;
+      glm::vec3 e2 = centerPosition - end;
+
+      glm::vec3 axis = glm::normalize(cross(e1,e2));
+      //float magnitude = sqrt(axis.x*axis.x+ axis.y*axis.y + axis.z*axis.z);
+      //  std::cout<<glm::to_string(axis)<<std::endl;
+      float sDe = acos(dot(e1,e2));
+      
+      if(sDe == 0)
+      {
+      
+        axis= glm::vec3(0.0,0.0,0.0);
+      }
+      glm::quat myQuat = glm::quat(glm::angleAxis(sDe,axis));
+      glm::mat4 rotationMat = glm::toMat4(myQuat);
+      totalRotationMatrix = totalRotationMatrix*rotationMat;
       
     }    
     
-    modelViewMatrix = lookAtMatrix*totalRotationMatrix;
+
 
 
     if(isKeyPressed('Q')){
